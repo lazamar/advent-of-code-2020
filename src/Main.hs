@@ -153,11 +153,7 @@ Given the same example list from above:
     the new interpretation of the policies?
 -}
 
-data Rule = Rule
-    { rule_number1 :: Int
-    , rule_number2 :: Int
-    , rule_letter :: Char
-    }
+data Rule = Rule Int Int Char
 
 type Password = String
 
@@ -175,24 +171,25 @@ day2 = do
         "Passwords that satisfy the rules for index positions: "
             <> show (length $ filter satisfiesRulePositions passwords)
     where
-        readPassword :: String -> (Rule , String)
+        readPassword :: String -> (Rule , Password)
         readPassword (words -> [numbers , [letter , ':'] , password]) =
             (Rule number1 number2 letter , password)
             where
                 (number1 , number2) = (read *** read) $ second tail $ break (== '-') numbers
 
-        satisfiesRuleMinMax :: (Rule , String) -> Bool
+        satisfiesRuleMinMax :: (Rule , Password) -> Bool
         satisfiesRuleMinMax (Rule minCount maxCount letter , password) =
             minCount <= letterCount && letterCount <= maxCount
             where
                 letterCount = length $ filter (== letter) password
 
-        satisfiesRulePositions :: (Rule , String) -> Bool
+        satisfiesRulePositions :: (Rule , Password) -> Bool
         satisfiesRulePositions (Rule ix1 ix2 letter , password) =
-            (1 ==) $
-                length
-                    [ pletter
-                    | (ix , pletter) <- zip [1 ..] password
+            length charsAtIndices == 1
+            where
+                charsAtIndices =
+                    [ char
+                    | (ix , char) <- zip [1 ..] password
                     , ix == ix1 || ix == ix2
-                    , pletter == letter
+                    , char == letter
                     ]
