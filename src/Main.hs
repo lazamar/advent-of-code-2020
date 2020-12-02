@@ -1,11 +1,14 @@
+{-# LANGUAGE ViewPatterns #-}
+
 module Main where
 
+import Control.Applicative (empty)
 import Data.Maybe (listToMaybe)
 import qualified Data.Set as Set
 
 main = do
     putStrLn "Advent Of Code"
-    day1_1
+    day1
 
 {-- Day 1
 After saving Christmas five years in a row, you've decided to take a vacation
@@ -40,10 +43,12 @@ Of course, your expense report is much larger. Find the two entries that sum to
 2020; what do you get if you multiply them together?
 -}
 
-day1_1 :: IO ()
-day1_1 = do
+day1 :: IO ()
+day1 = do
     numbers <- fmap read . lines <$> readFile "puzzle-inputs/1.txt"
-    putStrLn $ case addTo 2020 numbers of
+
+    putStrLn "Day 1 - 1"
+    putStrLn $ case twoNumbersThatAddTo 2020 numbers of
         Nothing -> "No two numbers add to 2020"
         Just (one , two) ->
             unwords
@@ -54,11 +59,34 @@ day1_1 = do
                 , "which multiply to"
                 , show (one * two)
                 ]
+
+    putStrLn "Day 1 - 2"
+    putStrLn $ case threeNumbersThatAddTo 2020 numbers of
+        Nothing -> "No three numbers add to 2020"
+        Just (one , two , three) ->
+            unwords
+                [ "The answer is "
+                , show one
+                , ","
+                , show two
+                , ", and"
+                , show three
+                , "which multiply to"
+                , show (one * two * three)
+                ]
     where
-        addTo target numbers =
-            fmap (\n -> (n , target - n))
-                . listToMaybe
-                $ filter hasComplement numbers
-            where
-                hasComplement n = (target - n) `Set.member` numbersSet
-                numbersSet = Set.fromList numbers
+        -- O(n)
+        twoNumbersThatAddTo :: (Ord a , Num a) => a -> [a] -> Maybe (a , a)
+        twoNumbersThatAddTo target (Set.fromList -> numbers) = listToMaybe $ do
+            n <- Set.toList numbers
+            let complement = target - n
+            if complement `Set.member` numbers
+                then return (n , complement)
+                else empty
+
+        -- O(n^2)
+        threeNumbersThatAddTo :: (Ord a , Num a) => a -> [a] -> Maybe (a , a , a)
+        threeNumbersThatAddTo target numbers = listToMaybe $ do
+            n1 <- numbers
+            Just (n2 , n3) <- pure $ twoNumbersThatAddTo (target - n1) $ filter (/= n1) numbers
+            return (n1 , n2 , n3)
