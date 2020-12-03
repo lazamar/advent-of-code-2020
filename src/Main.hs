@@ -1,17 +1,21 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Main where
 
 import Control.Applicative (empty)
 import Control.Arrow ((***))
+import Data.Array (Array)
 import Data.Bifunctor (second)
-import Data.Maybe (listToMaybe)
+import Data.Maybe (catMaybes, isJust, listToMaybe)
+import qualified Data.Array as Array
 import qualified Data.Set as Set
 
 main = do
     putStrLn "Advent Of Code"
     day1
     day2
+    day3
 
 {-- Day 1
 After saving Christmas five years in a row, you've decided to take a vacation
@@ -49,34 +53,18 @@ Of course, your expense report is much larger. Find the two entries that sum to
 day1 :: IO ()
 day1 = do
     numbers <- fmap read . lines <$> readFile "puzzle-inputs/1.txt"
-
-    putStrLn "Day 1 - 1"
-    putStrLn $ case twoNumbersThatAddTo 2020 numbers of
-        Nothing -> "No two numbers add to 2020"
-        Just (one , two) ->
-            unwords
-                [ "The answer is "
-                , show one
-                , "and"
-                , show two
-                , "which multiply to"
-                , show (one * two)
-                ]
-
-    putStrLn "Day 1 - 2"
-    putStrLn $ case threeNumbersThatAddTo 2020 numbers of
-        Nothing -> "No three numbers add to 2020"
-        Just (one , two , three) ->
-            unwords
-                [ "The answer is "
-                , show one
-                , ","
-                , show two
-                , ", and"
-                , show three
-                , "which multiply to"
-                , show (one * two * three)
-                ]
+    putStrLn $
+        unlines
+            [ "Day 1"
+            , case twoNumbersThatAddTo 2020 numbers of
+                  Nothing -> "No two numbers add to 2020"
+                  Just (one , two) ->
+                      unwords [show one , "and" , show two , "which multiply to" , show (one * two)]
+            , case threeNumbersThatAddTo 2020 numbers of
+                  Nothing -> "No three numbers add to 2020"
+                  Just (one , two , three) ->
+                      unwords [show one , "," , show two , ", and" , show three , "which multiply to" , show (one * two * three)]
+            ]
     where
         -- O(n)
         twoNumbersThatAddTo :: (Ord a , Num a) => a -> [a] -> Maybe (a , a)
@@ -160,16 +148,14 @@ type Password = String
 day2 :: IO ()
 day2 = do
     passwords <- fmap readPassword . lines <$> readFile "puzzle-inputs/2.txt"
-
-    putStrLn "Day 2 - 1"
     putStrLn $
-        "Passwords that satisfy the rules for min and max: "
-            <> show (length $ filter satisfiesRuleMinMax passwords)
-
-    putStrLn "Day 2 - 1"
-    putStrLn $
-        "Passwords that satisfy the rules for index positions: "
-            <> show (length $ filter satisfiesRulePositions passwords)
+        unlines
+            [ "Day 2"
+            , "Passwords that satisfy the rules for min and max: "
+                  <> show (length $ filter satisfiesRuleMinMax passwords)
+            , "Passwords that satisfy the rules for index positions: "
+                  <> show (length $ filter satisfiesRulePositions passwords)
+            ]
     where
         readPassword :: String -> (Rule , Password)
         readPassword (words -> [numbers , [letter , ':'] , password]) =
@@ -193,3 +179,139 @@ day2 = do
                     , ix == ix1 || ix == ix2
                     , char == letter
                     ]
+
+{-
+--- Day 3: Toboggan Trajectory ---
+
+With the toboggan login problems resolved, you set off toward the airport.
+While travel by toboggan might be easy, it's certainly not safe: there's very
+minimal steering and the area is covered in trees. You'll need to see which
+angles will take you near the fewest trees.
+
+Due to the local geology, trees in this area only grow on exact integer
+coordinates in a grid. You make a map (your puzzle input) of the open squares
+(.) and trees (#) you can see. For example:
+
+..##.......
+#...#...#..
+.#....#..#.
+..#.#...#.#
+.#...##..#.
+..#.##.....
+.#.#.#....#
+.#........#
+#.##...#...
+#...##....#
+.#..#...#.#
+
+These aren't the only trees, though; due to something you read about once
+involving arboreal genetics and biome stability, the same pattern repeats to
+the right many times:
+
+..##.........##.........##.........##.........##.........##.......  --->
+#...#...#..#...#...#..#...#...#..#...#...#..#...#...#..#...#...#..
+.#....#..#..#....#..#..#....#..#..#....#..#..#....#..#..#....#..#.
+..#.#...#.#..#.#...#.#..#.#...#.#..#.#...#.#..#.#...#.#..#.#...#.#
+.#...##..#..#...##..#..#...##..#..#...##..#..#...##..#..#...##..#.
+..#.##.......#.##.......#.##.......#.##.......#.##.......#.##.....  --->
+.#.#.#....#.#.#.#....#.#.#.#....#.#.#.#....#.#.#.#....#.#.#.#....#
+.#........#.#........#.#........#.#........#.#........#.#........#
+#.##...#...#.##...#...#.##...#...#.##...#...#.##...#...#.##...#...
+#...##....##...##....##...##....##...##....##...##....##...##....#
+.#..#...#.#.#..#...#.#.#..#...#.#.#..#...#.#.#..#...#.#.#..#...#.#  --->
+
+You start on the open square (.) in the top-left corner and need to reach the
+bottom (below the bottom-most row on your map).
+
+The toboggan can only follow a few specific slopes (you opted for a cheaper
+model that prefers rational numbers); start by counting all the trees you would
+encounter for the slope right 3, down 1:
+
+From your starting position at the top-left, check the position that is right 3
+and down 1. Then, check the position that is right 3 and down 1 from there, and
+so on until you go past the bottom of the map.
+
+The locations you'd check in the above example are marked here with O where
+there was an open square and X where there was a tree:
+
+..##.........##.........##.........##.........##.........##.......  --->
+#..O#...#..#...#...#..#...#...#..#...#...#..#...#...#..#...#...#..
+.#....X..#..#....#..#..#....#..#..#....#..#..#....#..#..#....#..#.
+..#.#...#O#..#.#...#.#..#.#...#.#..#.#...#.#..#.#...#.#..#.#...#.#
+.#...##..#..X...##..#..#...##..#..#...##..#..#...##..#..#...##..#.
+..#.##.......#.X#.......#.##.......#.##.......#.##.......#.##.....  --->
+.#.#.#....#.#.#.#.O..#.#.#.#....#.#.#.#....#.#.#.#....#.#.#.#....#
+.#........#.#........X.#........#.#........#.#........#.#........#
+#.##...#...#.##...#...#.X#...#...#.##...#...#.##...#...#.##...#...
+#...##....##...##....##...#X....##...##....##...##....##...##....#
+.#..#...#.#.#..#...#.#.#..#...X.#.#..#...#.#.#..#...#.#.#..#...#.#  --->
+
+In this example, traversing the map using this slope would cause you to
+encounter 7 trees.
+
+Starting at the top-left corner of your map and following a slope of right 3
+and down 1, how many trees would you encounter?
+-}
+
+type Matrix a = Array (Int , Int) a
+
+type Point = (Int , Int)
+
+type Slope = (Int , Int)
+
+data GridItem
+    = Square
+    | Tree
+    deriving (Eq , Show)
+
+day3 :: IO ()
+day3 = do
+    grid <- parseFile <$> readFile "puzzle-inputs/3.txt"
+    let slopes = [(1 , 1) , (3 , 1) , (5 , 1) , (7 , 1) , (1 , 2)]
+    putStrLn $
+        unlines
+            [ "Day 3"
+            , "Total trees in slope (3, 1): " <> show (treeCount grid (3 , 1))
+            , "Multiplication of tree slopes: " <> show (product $ map (treeCount grid) slopes)
+            ]
+    where
+        parseFile :: String -> Matrix GridItem
+        parseFile = fmap toGridItem . readMatrix . lines
+
+        toGridItem :: Char -> GridItem
+        toGridItem = \case
+            '.' -> Square
+            '#' -> Tree
+
+        readMatrix :: [[a]] -> Matrix a
+        readMatrix ll =
+            Array.array
+                ((0 , 0) , (maxX , maxY))
+                [ ((x , y) , val)
+                | (y , row) <- zip [0 ..] ll
+                , (x , val) <- zip [0 ..] row
+                ]
+            where
+                maxY = length ll - 1
+                maxX = (length $ head ll) - 1
+
+        treeCount :: Matrix GridItem -> Slope -> Int
+        treeCount grid slope =
+            length
+                . filter (== Tree)
+                . map (grid Array.!)
+                $ path grid slope (0 , 0)
+
+        path :: Matrix a -> Slope -> Point -> [Point]
+        path matrix slope =
+            catMaybes
+                . takeWhile isJust
+                . iterate (>>= move slope)
+                . Just
+            where
+                move :: Slope -> Point -> Maybe Point
+                move (right , down) (x , y)
+                    | y + down > maxY = Nothing
+                    | otherwise = Just ((x + right) `mod` (maxX + 1) , y + down)
+
+                (_ , (maxX , maxY)) = Array.bounds matrix

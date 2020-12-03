@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c01e44c759f0c7ef32a9510d24fdc35200a908a2a5cee9dd372d574f45c307db
+-- hash: b07cc472e7debcea78a012b9f0d70aed2b1e4808827916f753549c2ac22ede0f
 
 name:           advent-of-code
 version:        0.1.0.0
@@ -31,7 +31,8 @@ library
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
+      array
+    , base >=4.7 && <5
     , containers
   default-language: Haskell2010
 
@@ -44,6 +45,7 @@ executable advent-of-code-exe
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       advent-of-code
+    , array
     , base >=4.7 && <5
     , containers
   default-language: Haskell2010
@@ -58,6 +60,7 @@ test-suite advent-of-code-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       advent-of-code
+    , array
     , base >=4.7 && <5
     , containers
   default-language: Haskell2010
