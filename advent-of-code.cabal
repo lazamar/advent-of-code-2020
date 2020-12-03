@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b07cc472e7debcea78a012b9f0d70aed2b1e4808827916f753549c2ac22ede0f
+-- hash: 70f0cde82555fb62a48461df26a94965083f31a5856e097658d4b11cda6401b0
 
 name:           advent-of-code
 version:        0.1.0.0
@@ -30,6 +30,7 @@ library
       Paths_advent_of_code
   hs-source-dirs:
       src
+  ghc-options: -Wall -Wno-name-shadowing -Wincomplete-uni-patterns -Wno-incomplete-patterns
   build-depends:
       array
     , base >=4.7 && <5
@@ -42,7 +43,7 @@ executable advent-of-code-exe
       Paths_advent_of_code
   hs-source-dirs:
       src
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Wno-name-shadowing -Wincomplete-uni-patterns -Wno-incomplete-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       advent-of-code
     , array
@@ -57,7 +58,7 @@ test-suite advent-of-code-test
       Paths_advent_of_code
   hs-source-dirs:
       test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Wno-name-shadowing -Wincomplete-uni-patterns -Wno-incomplete-patterns -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       advent-of-code
     , array

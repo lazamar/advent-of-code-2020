@@ -23,6 +23,8 @@ dependencies:
 - containers
 - array
 
+ghc-options: -Wall -Wno-name-shadowing -Wincomplete-uni-patterns -Wno-incomplete-patterns
+
 library:
   source-dirs: src
 

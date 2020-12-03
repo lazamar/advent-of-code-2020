@@ -7,10 +7,12 @@ import Control.Applicative (empty)
 import Control.Arrow ((***))
 import Data.Array (Array)
 import Data.Bifunctor (second)
-import Data.Maybe (catMaybes, isJust, listToMaybe)
+import Data.Maybe (listToMaybe)
+import Data.Tuple (swap)
 import qualified Data.Array as Array
 import qualified Data.Set as Set
 
+main :: IO ()
 main = do
     putStrLn "Advent Of Code"
     day1
@@ -67,20 +69,21 @@ day1 = do
             ]
     where
         -- O(n)
-        twoNumbersThatAddTo :: (Ord a , Num a) => a -> [a] -> Maybe (a , a)
-        twoNumbersThatAddTo target (Set.fromList -> numbers) = listToMaybe $ do
-            n <- Set.toList numbers
+        twoNumbersThatAddTo :: Int -> [Int] -> Maybe (Int , Int)
+        twoNumbersThatAddTo target numbers = listToMaybe $ do
+            let nset = Set.fromList numbers
+            n <- numbers
             let complement = target - n
-            if complement `Set.member` numbers
+            if complement `Set.member` nset
                 then return (n , complement)
                 else empty
 
         -- O(n^2)
-        threeNumbersThatAddTo :: (Ord a , Num a) => a -> [a] -> Maybe (a , a , a)
+        threeNumbersThatAddTo :: Int -> [Int] -> Maybe (Int , Int , Int)
         threeNumbersThatAddTo target numbers = listToMaybe $ do
-            n1 <- numbers
-            Just (n2 , n3) <- pure $ twoNumbersThatAddTo (target - n1) $ filter (/= n1) numbers
-            return (n1 , n2 , n3)
+            x <- numbers
+            Just (y , z) <- pure $ twoNumbersThatAddTo (target - x) $ filter (/= x) numbers
+            return (x , y , z)
 
 {-
 --- Day 2: Password Philosophy ---
@@ -158,25 +161,25 @@ day2 = do
             ]
     where
         readPassword :: String -> (Rule , Password)
-        readPassword (words -> [numbers , [letter , ':'] , password]) =
-            (Rule number1 number2 letter , password)
+        readPassword (words -> [numbers , [letter , ':'] , pass]) =
+            (Rule low high letter , pass)
             where
-                (number1 , number2) = (read *** read) $ second tail $ break (== '-') numbers
+                (low , high) = (read *** read) $ second tail $ break (== '-') numbers
 
         satisfiesRuleMinMax :: (Rule , Password) -> Bool
-        satisfiesRuleMinMax (Rule minCount maxCount letter , password) =
-            minCount <= letterCount && letterCount <= maxCount
+        satisfiesRuleMinMax (Rule low high letter , pass) =
+            low <= count && count <= high
             where
-                letterCount = length $ filter (== letter) password
+                count = length $ filter (== letter) pass
 
         satisfiesRulePositions :: (Rule , Password) -> Bool
-        satisfiesRulePositions (Rule ix1 ix2 letter , password) =
+        satisfiesRulePositions (Rule low high letter , pass) =
             length charsAtIndices == 1
             where
                 charsAtIndices =
                     [ char
-                    | (ix , char) <- zip [1 ..] password
-                    , ix == ix1 || ix == ix2
+                    | (ix , char) <- zip [1 ..] pass
+                    , ix == low || ix == high
                     , char == letter
                     ]
 
@@ -284,16 +287,11 @@ day3 = do
             '#' -> Tree
 
         readMatrix :: [[a]] -> Matrix a
-        readMatrix ll =
-            Array.array
-                ((0 , 0) , (maxX , maxY))
-                [ ((x , y) , val)
-                | (y , row) <- zip [0 ..] ll
-                , (x , val) <- zip [0 ..] row
-                ]
+        readMatrix items = Array.ixmap range swap $ Array.listArray (swap <$> range) $ concat items
             where
-                maxY = length ll - 1
-                maxX = (length $ head ll) - 1
+                range = ((0 , 0) , (maxX , maxY))
+                maxY = length items - 1
+                maxX = length (head items) - 1
 
         treeCount :: Matrix GridItem -> Slope -> Int
         treeCount grid slope =
@@ -302,12 +300,11 @@ day3 = do
                 . map (grid Array.!)
                 $ path grid slope (0 , 0)
 
+        -- O(y) where y is the height of the matrix.
+        -- Without using an Array the worst case time complexity would
+        -- be O(x*y) for each path retrieval.
         path :: Matrix a -> Slope -> Point -> [Point]
-        path matrix slope =
-            catMaybes
-                . takeWhile isJust
-                . iterate (>>= move slope)
-                . Just
+        path matrix slope origin = unroll (move slope) origin
             where
                 move :: Slope -> Point -> Maybe Point
                 move (right , down) (x , y)
@@ -315,3 +312,6 @@ day3 = do
                     | otherwise = Just ((x + right) `mod` (maxX + 1) , y + down)
 
                 (_ , (maxX , maxY)) = Array.bounds matrix
+
+        unroll :: (a -> Maybe a) -> a -> [a]
+        unroll f x = x : maybe [] (unroll f) (f x)
