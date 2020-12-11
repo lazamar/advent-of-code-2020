@@ -9,6 +9,8 @@ import Control.Arrow ((***))
 import Data.Array (Array)
 import Data.Bifunctor (second)
 import Data.Char (isDigit)
+import Data.Foldable (foldr1)
+import Data.List (foldl')
 import Data.Maybe (listToMaybe, mapMaybe)
 import Data.Tuple (swap)
 import qualified Data.Array as Array
@@ -23,6 +25,7 @@ main = do
     day3
     day4
     day5
+    day6
 
 -- Day 1
 
@@ -182,13 +185,6 @@ day4 = do
         parseFile :: String -> [Credential]
         parseFile = mapMaybe parseCredential . splitOn empty . lines
 
-        splitOn :: Ord a => a -> [a] -> [[a]]
-        splitOn separator l = foldr step [[]] l
-            where
-                step x (h : acc)
-                    | x == separator = [] : h : acc
-                    | otherwise = (x : h) : acc
-
         parseCredential :: [String] -> Maybe Credential
         parseCredential inp = do
             let fields = Map.fromList $ concatMap (fmap toKeyValue . words) inp
@@ -210,12 +206,9 @@ day4 = do
         isValidCredential Credential {..} =
             all
                 id
-                [ length birthYear == 4
-                , 1920 <= read birthYear && read birthYear <= 2002
-                , length issueYear == 4
-                , 2010 <= read issueYear && read issueYear <= 2020
-                , length expirationYear == 4
-                , 2020 <= read expirationYear && read expirationYear <= 2030
+                [ length birthYear == 4 && 1920 <= read birthYear && read birthYear <= 2002
+                , length issueYear == 4 && 2010 <= read issueYear && read issueYear <= 2020
+                , length expirationYear == 4 && 2020 <= read expirationYear && read expirationYear <= 2030
                 , case span isDigit height of
                       (read -> n , "in") -> 59 <= n && n <= 76
                       (read -> n , "cm") -> 150 <= n && n <= 193
@@ -229,6 +222,13 @@ day4 = do
             where
                 hexNums = ['0' .. '9'] ++ ['a' .. 'f']
                 eyeColors = Set.fromList ["amb" , "blu" , "brn" , "gry" , "grn" , "hzl" , "oth"]
+
+splitOn :: Ord a => a -> [a] -> [[a]]
+splitOn separator l = foldr step [[]] l
+    where
+        step x (h : acc)
+            | x == separator = [] : h : acc
+            | otherwise = (x : h) : acc
 
 -- Day 5
 
@@ -275,3 +275,22 @@ day5 = do
                 Just maxId = Set.lookupMax seats
                 missingSeats = filter (not . (`Set.member` seats)) [minId , minId + 1 .. maxId]
                 hasNeighbours sid = Set.member (sid - 1) seats && Set.member (sid + 1) seats
+
+day6 :: IO ()
+day6 = do
+    groups <- toGroups <$> readFile "puzzle-inputs/6.txt"
+    putStrLn $
+        unlines
+            [ "Day 6"
+            , "Sum of yes answers from anyone: " <> show (sum $ map anyAnsweredYes groups)
+            , "Sum of yes answers from everyone: " <> show (sum $ map allAnsweredYes groups)
+            ]
+    where
+        toGroups :: String -> [[String]]
+        toGroups = splitOn "" . lines
+
+        anyAnsweredYes :: [String] -> Int
+        anyAnsweredYes = Set.size . Set.fromList . concat
+
+        allAnsweredYes :: [String] -> Int
+        allAnsweredYes = Set.size . foldr1 Set.intersection . map Set.fromList
