@@ -2,7 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-# define MAX_LINE_LENGTH 100
 
 struct ListNode {
     int value;
@@ -50,6 +49,8 @@ void part2(struct ListNode* numbers)
         }
     }
 }
+
+# define MAX_LINE_LENGTH 100
 
 int main () {
     char line[MAX_LINE_LENGTH];
