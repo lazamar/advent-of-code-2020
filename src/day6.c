@@ -34,7 +34,6 @@ void addAnswers(char * line, int answers[]) {
 }
 
 int main () {
-
     FILE * file = fopen("puzzle-inputs/6.txt", "r");
     char line[MAX_LINE_LEN];
 
