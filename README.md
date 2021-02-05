@@ -13,3 +13,9 @@ Run C Code
 ```
 cc src/day1.c -o run.out && ./run.out
 ```
+
+Run Rust code
+
+```
+cargo run 1
+```
