@@ -2,20 +2,12 @@
 
 Solutions for 2020 [Advent of Code](https://adventofcode.com/2020/)
 
-Run Haskell Code
+Running the code
 
 ```
-stack runhaskell src/Day1.hs
+    Haskell - stack runhaskell src/Day1.hs
+    C       - cc src/day1.c -o run.out && ./run.out
+    Rust    - cargo run 1
+    C++     - g++ src/day1.cpp -std=c++14 -o run && ./run
 ```
 
-Run C Code
-
-```
-cc src/day1.c -o run.out && ./run.out
-```
-
-Run Rust code
-
-```
-cargo run 1
-```
